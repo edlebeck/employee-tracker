@@ -51,12 +51,18 @@ function primaryPrompt(){
 function answerFunction (answer) {
     if (answer.primaryOption === 'View All Employees') {
         viewEmployees();
+    } else if (answer.primaryOption === 'View All Departments') {
+        viewDepartments();
+    } else if (answer.primaryOption === 'View All Roles') {
+        viewRoles();
+    } else if (answer.primaryOption === 'Exit') {
+        endProgram();
     }
 };
 
-function viewEmployees () {
+function viewEmployees() {
     db.execute(
-        `SELECT a.full_name AS NAME, role.title AS TITLE, department.name AS DEPARTMENT, b.full_name AS MANAGER
+        `SELECT a.id AS ID, a.first_name AS FIRST, a.last_name AS LAST, role.title AS TITLE, department.name AS DEPARTMENT, role.salary AS SALARY, b.full_name AS MANAGER
         FROM employee a
         LEFT JOIN role
         ON a.role_id = role.id
@@ -73,5 +79,42 @@ function viewEmployees () {
         });
         primaryPrompt();
 };
+
+function viewDepartments() {
+    db.execute(
+        `SELECT id AS ID, name AS DEPARTMENT
+        FROM department;`, function(err, results) {
+            if (err) {
+                console.log(err);
+            }
+            console.table(`
+            
+            `, results);
+        }
+    );
+    primaryPrompt();
+};
+
+function viewRoles () {
+    db.execute(
+        `SELECT role.id AS ID, role.title AS TITLE, department.name AS DEPARTMENT, role.salary AS SALARY
+        FROM role
+        LEFT JOIN department
+        ON role.department_id = department.id;`, function(err, results) {
+            if (err) {
+                console.log(err);
+            }
+            console.table(`
+            
+            `, results);
+        }
+    );
+    primaryPrompt();
+};
+
+function endProgram() {
+    db.end();
+    console.log("Goodbye");
+}
 
 primaryPrompt();

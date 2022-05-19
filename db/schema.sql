@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS department;
 
 CREATE TABLE department (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(30)
+    name VARCHAR(50)
 );
 
 CREATE TABLE role (

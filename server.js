@@ -1,6 +1,14 @@
 const mysql = require('mysql2');
+// const mysql2 = require('mysql2/promise');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
+
+const db = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'Welcome@123',
+  database: 'employees_db',
+});
 
 const primary = [
     {
@@ -32,12 +40,57 @@ const primary = [
     }
 ]
 
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'Welcome@123',
-  database: 'employees_db'
-});
+const departmentQuery = [
+    {
+        name: 'departmentAdd',
+        type: 'input',
+        message: 'Enter Department name:',
+        validate: departmentInput => {
+            if (departmentInput && departmentInput.length <50) {
+                return true;
+            } else {
+                console.log('Please enter a valid department name(requires input and less than 50 characters)');
+                return false;
+            }
+        }
+    }
+]
+
+const roleQuery = [
+    {
+        name: 'title',
+        type: 'input',
+        message: 'Enter Title:',
+        validate: titleInput => {
+            if (titleInput && titleInput.length < 30) {
+                return true;
+            } else {
+                console.log('Please enter valid title(requires input and less than 30 characters)');
+                return false;
+            }
+        }
+    },
+    {
+        name: 'salary',
+        type: 'input',
+        message: 'Enter Salary:',
+        validate: salaryInput => {
+            if (salaryInput && salaryInput.length < 12) {
+                return true;
+            } else {
+                console.log('Please enter valid title(requires input and less than 30 characters)');
+                return false;
+            }
+        }
+    },
+    {
+        name: 'deptID',
+        type: 'list',
+        message: 'Choose Department:',
+        choices: getDepts
+    }
+]
+
 
 // db.execute('SELECT * FROM employee;', function(err, results) {
 //     console.table(results);
@@ -57,6 +110,10 @@ function answerFunction (answer) {
         viewRoles();
     } else if (answer.primaryOption === 'Exit') {
         endProgram();
+    } else if (answer.primaryOption === 'Add a Department') {
+        addDepartment();
+    } else if (answer.primaryOption === 'Add a Role') {
+        addRole();
     }
 };
 
@@ -112,9 +169,47 @@ function viewRoles () {
     primaryPrompt();
 };
 
+function addDepartment() {
+    inquirer.prompt(departmentQuery)
+        .then(show => {
+            db.execute(
+                `INSERT INTO department (name)
+                VALUES 
+                (?)`, [show.departmentAdd], function(err, results) {
+                    if (err) {console.log(err);}
+                    console.table(`
+
+                    DEPARTMENT ADDED
+                    
+                    `)
+                }
+            )
+        })
+        .then(primaryPrompt)
+};
+
+function addRole () {
+    inquirer.prompt(roleQuery)
+}
+
+// function insertDept (name)
+
 function endProgram() {
     db.end();
     console.log("Goodbye");
-}
+};
 
-primaryPrompt();
+function getDepts() {
+    let depts = []
+    db.query('SELECT name FROM department',
+    function (err, results){
+        for (i = 0 ; i < results.length; i++) {
+            depts.push((i+1) + ": " + results[i].name)
+        }
+        console.log(depts);
+    })
+    console.log(depts);
+};
+
+getDepts();
+// primaryPrompt();

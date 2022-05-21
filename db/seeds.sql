@@ -25,7 +25,4 @@ VALUES
     ('Montague', 'Summers', 2, 2),
     ('Octavia', 'Butler', 3, 4),
     ('Unica', 'Zurn', 4, 6);
-
-ALTER TABLE employee
-ADD COLUMN full_name VARCHAR(60);
 UPDATE employee SET full_name = CONCAT(first_name, ' ', last_name);

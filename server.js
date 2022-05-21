@@ -1,5 +1,4 @@
 const mysql = require('mysql2');
-// const mysql2 = require('mysql2/promise');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
 
@@ -72,29 +71,47 @@ const roleQuery = [
     },
     {
         name: 'salary',
-        type: 'input',
+        type: 'number',
         message: 'Enter Salary:',
         validate: salaryInput => {
-            if (salaryInput && salaryInput.length < 12) {
+            if (salaryInput && salaryInput.toString().length < 12) {
                 return true;
             } else {
-                console.log('Please enter valid title(requires input and less than 30 characters)');
+                console.log('Please enter valid salary (requires input, is a number, and less than 12 digits)');
+                return false;
+            }
+        }
+    }
+]
+
+const employeeQuery = [
+    {
+        name: 'first_name',
+        type: 'input',
+        message: "Enter employee's first name",
+        validate: firstInput => {
+            if (firstInput && firstInput.length < 30) {
+                return true;
+            } else {
+                console.log('Please enter valid first name(requires input and less than 30 characters)');
                 return false;
             }
         }
     },
     {
-        name: 'deptID',
-        type: 'list',
-        message: 'Choose Department:',
-        choices: getDepts
+        name: 'last_name',
+        type: 'input',
+        message: "Enter employee's first name",
+        validate: lastInput => {
+            if (lastInput && lastInput.length < 30) {
+                return true;
+            } else {
+                console.log('Please enter valid last name(requires input and less than 30 characters)');
+                return false;
+            }
+        }
     }
 ]
-
-
-// db.execute('SELECT * FROM employee;', function(err, results) {
-//     console.table(results);
-// });
 
 function primaryPrompt(){
     inquirer.prompt(primary)
@@ -114,6 +131,8 @@ function answerFunction (answer) {
         addDepartment();
     } else if (answer.primaryOption === 'Add a Role') {
         addRole();
+    } else if (answer.primaryOption === 'Add an Employee') {
+        addEmployee();
     }
 };
 
@@ -188,28 +207,126 @@ function addDepartment() {
         .then(primaryPrompt)
 };
 
-function addRole () {
-    inquirer.prompt(roleQuery)
+async function addRole () {
+    let allDepts = await getDepts();
+    let finalDepts = (    {
+        name: 'deptID',
+        type: 'list',
+        message: 'Choose Department:',
+        choices: allDepts
+    })
+    inquirer.prompt([...roleQuery, finalDepts])
+        .then(newRole => {
+            let tempDept = newRole.deptID;
+            let deptNum = tempDept.replace(/(^\d+)(.+$)/i,'$1');
+            db.execute(`
+            INSERT INTO role (title, salary, department_id)
+            VALUES
+                (?, ?, ?)`, [newRole.title, newRole.salary, deptNum], function (err, results) {
+                    if (err) {console.log(err);}
+                    console.table(`
+                    
+                    ROLE ADDED
+
+                    `)
+                }
+            )
+        }).then(primaryPrompt)
 }
 
-// function insertDept (name)
+async function addEmployee () {
+    let allRoles = await getRoles();
+    let allManagers = await getManagers();
+    let finalRoles = ( {
+        name: 'role',
+        type: 'list',
+        message: 'Choose employee role',
+        choices: allRoles
+    })
+    let finalManagers = ({
+        name: 'manager',
+        type: 'list',
+        message: 'Choose employee manager',
+        choices: allManagers
+    })
+    inquirer.prompt([...employeeQuery, finalRoles, finalManagers])
+        .then(newEmployee => {
+            let tempRole = newEmployee.role;
+            let tempRoleID = tempRole.replace(/(^\d+)(.+$)/i,'$1');
+            let tempManager = newEmployee.manager;
+            let tempManagerID
+            if (tempManager === 'No Manager') {
+                tempManagerID = '';
+            } else {
+                tempManagerID = tempManager.replace(/(^\d+)(.+$)/i,'$1');
+            }
+            db.execute(`INSERT INTO employee (first_name, last_name, role_id, manager_id)
+            VALUES
+                (?, ?, ?, ?)`, [newEmployee.first_name, newEmployee.last_name, tempRoleID, tempManagerID],
+                function (err, results) {
+                    if (err) {console.log(err);}
+                    console.table(`
+                    
+                    Employee Added
+                    
+                    `)
+                })
+            db.execute('UPDATE employee SET full_name = CONCAT(?, " ", ?) WHERE first_name = ? AND last_name = ?', [newEmployee.first_name, newEmployee.last_name, newEmployee.first_name, newEmployee.last_name],
+            function (err, results) {
+                if (err) {console.log(err);}
+            })
+        })
+        .then(primaryPrompt)
+
+}
+
+function getDepts() {
+    return new Promise ((resolve, reject)=> {
+        db.query('SELECT name FROM department',
+        function (err, results){
+            let depts = []
+            for (i = 0 ; i < results.length; i++) {
+                depts.push((i+1) + ": " + results[i].name)
+            }
+            resolve (depts);
+        })
+    })
+};
+
+function getRoles() {
+    return new Promise ((resolve, reject) => {
+        db.query('SELECT title FROM role',
+        function (err, results){
+            let roles = []
+            for (i = 0 ; i < results.length; i++) {
+                roles.push((i+1) + ': ' + results[i].title)
+            }
+            resolve (roles)
+        })
+    })
+};
+
+function getManagers() {
+    return new Promise ((resolve, reject) => {
+        db.query('SELECT full_name FROM employee', 
+        function (err, results){
+            let managers = ['No Manager']
+            for (i = 0 ; i < results.length ; i++) {
+                managers.push((i+1) + ': ' + results[i].full_name)
+            }
+            resolve (managers)
+        }
+        )
+    })
+};
 
 function endProgram() {
     db.end();
     console.log("Goodbye");
 };
 
-function getDepts() {
-    let depts = []
-    db.query('SELECT name FROM department',
-    function (err, results){
-        for (i = 0 ; i < results.length; i++) {
-            depts.push((i+1) + ": " + results[i].name)
-        }
-        console.log(depts);
-    })
-    console.log(depts);
-};
+primaryPrompt();
 
-getDepts();
-// primaryPrompt();
+// let teststring = "1: Clerical"
+// let testint = teststring.replace(/(^\d+)(.+$)/i,'$1');
+// console.log(testint);

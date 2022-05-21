@@ -8,7 +8,7 @@ const db = mysql.createConnection({
   password: 'Welcome@123',
   database: 'employees_db',
 });
-
+// questions for primary inquirer node
 const primary = [
     {
         name: 'primaryOption',
@@ -38,7 +38,7 @@ const primary = [
         ]
     }
 ]
-
+//start of questions for adding a department
 const departmentQuery = [
     {
         name: 'departmentAdd',
@@ -54,9 +54,9 @@ const departmentQuery = [
         }
     }
 ]
-
+// placeholder array for spreading arrays
 const holder = []
-
+// questions for adding role
 const roleQuery = [
     {
         name: 'title',
@@ -85,7 +85,7 @@ const roleQuery = [
         }
     }
 ]
-
+// questions for adding employee
 const employeeQuery = [
     {
         name: 'first_name',
@@ -114,12 +114,12 @@ const employeeQuery = [
         }
     }
 ]
-
+// function to return to primary node
 function primaryPrompt(){
     inquirer.prompt(primary)
         .then(answerFunction);
 };
-
+// function to run chosen option
 function answerFunction (answer) {
     if (answer.primaryOption === 'View All Employees') {
         viewEmployees();
@@ -139,7 +139,7 @@ function answerFunction (answer) {
         updateEmployee();
     }
 };
-
+// function to view all employees
 function viewEmployees() {
     db.execute(
         `SELECT a.id AS ID, a.first_name AS FIRST, a.last_name AS LAST, role.title AS TITLE, department.name AS DEPARTMENT, role.salary AS SALARY, b.full_name AS MANAGER
@@ -159,7 +159,7 @@ function viewEmployees() {
         });
         primaryPrompt();
 };
-
+// function to view all departments
 function viewDepartments() {
     db.execute(
         `SELECT id AS ID, name AS DEPARTMENT
@@ -174,7 +174,7 @@ function viewDepartments() {
     );
     primaryPrompt();
 };
-
+// function to view all roles
 function viewRoles () {
     db.execute(
         `SELECT role.id AS ID, role.title AS TITLE, department.name AS DEPARTMENT, role.salary AS SALARY
@@ -191,7 +191,7 @@ function viewRoles () {
     );
     primaryPrompt();
 };
-
+// function to add a department
 function addDepartment() {
     inquirer.prompt(departmentQuery)
         .then(show => {
@@ -210,8 +210,9 @@ function addDepartment() {
         })
         .then(primaryPrompt)
 };
-
+// function to add new role
 async function addRole () {
+    // code to add dynamic list to inquirer
     let allDepts = await getDepts();
     let finalDepts = (    {
         name: 'deptID',
@@ -221,6 +222,7 @@ async function addRole () {
     })
     inquirer.prompt([...roleQuery, finalDepts])
         .then(newRole => {
+            // code to get the department id number
             let tempDept = newRole.deptID;
             let deptNum = tempDept.replace(/(^\d+)(.+$)/i,'$1');
             db.execute(`
@@ -237,8 +239,9 @@ async function addRole () {
             )
         }).then(primaryPrompt)
 }
-
+// function to add questions to 
 async function addEmployee () {
+    // code to add dynamic lists to pick a role and manager for add employee function
     let allRoles = await getRoles();
     let allManagers = await getManagers();
     let finalRoles = ( {
@@ -254,12 +257,13 @@ async function addEmployee () {
         choices: allManagers
     })
     inquirer.prompt([...employeeQuery, finalRoles, finalManagers])
-        .then(newEmployee => {
+        .then(newEmployee => {// code to get role id number
             let tempRole = newEmployee.role;
             let tempRoleID = tempRole.replace(/(^\d+)(.+$)/i,'$1');
+            // code to get manager id number
             let tempManager = newEmployee.manager;
             let tempManagerID
-            if (tempManager === 'No Manager') {
+            if (tempManager === 'None') {
                 tempManagerID = '';
             } else {
                 tempManagerID = tempManager.replace(/(^\d+)(.+$)/i,'$1');
@@ -285,6 +289,7 @@ async function addEmployee () {
 }
 
 async function updateEmployee() {
+    //code to get questions for inquirer to update employee
     let allRoles = await getRoles();
     let allEmployees = await getManagers();
     let finalEmployees = ({
@@ -301,9 +306,14 @@ async function updateEmployee() {
     })
     inquirer.prompt([...holder, finalEmployees, finalRoles])
         .then(updatedEmployee => {
+            // code to get number of new role
             let newRole = updatedEmployee.updatedRole;
             let newRoleID = newRole.replace(/(^\d+)(.+$)/i,'$1');
+            // code to get number of employee to update
             let employee = updatedEmployee.employee;
+            if (employee === 'None') {
+                return primaryPrompt;
+            }
             let employeeID = employee.replace(/(^\d+)(.+$)/i,'$1');
             db.execute('UPDATE employee SET role_id = ? WHERE id = ?', [newRoleID, employeeID], 
             function (err, results) {
@@ -318,7 +328,7 @@ async function updateEmployee() {
         .then(primaryPrompt)
 
 }
-
+// function to get dynamic list of departments
 function getDepts() {
     return new Promise ((resolve, reject)=> {
         db.query('SELECT name FROM department',
@@ -331,7 +341,7 @@ function getDepts() {
         })
     })
 };
-
+// function to get dynamic list of roles
 function getRoles() {
     return new Promise ((resolve, reject) => {
         db.query('SELECT title FROM role',
@@ -344,12 +354,12 @@ function getRoles() {
         })
     })
 };
-
+// function to get dynamic list of employees
 function getManagers() {
     return new Promise ((resolve, reject) => {
         db.query('SELECT full_name FROM employee', 
         function (err, results){
-            let managers = ['No Manager']
+            let managers = ['None']
             for (i = 0 ; i < results.length ; i++) {
                 managers.push((i+1) + ': ' + results[i].full_name)
             }
@@ -358,14 +368,10 @@ function getManagers() {
         )
     })
 };
-
+// function to end the program
 function endProgram() {
     db.end();
     console.log("Goodbye");
 };
-
+// function call to start the program
 primaryPrompt();
-
-// let teststring = "1: Clerical"
-// let testint = teststring.replace(/(^\d+)(.+$)/i,'$1');
-// console.log(testint);

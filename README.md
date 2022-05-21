@@ -16,6 +16,7 @@
   
   ## Usage
   Run server from the command line.  Follow prompts in the command line to modify and view database.
+  [Demonstration](https://drive.google.com/file/d/1el-_l6a_qOgzVN4SZjEW7cuyUwjo0vv6/view?usp=sharing)
   
   ## Contributing
   Contact through email or github.

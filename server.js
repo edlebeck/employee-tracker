@@ -55,6 +55,8 @@ const departmentQuery = [
     }
 ]
 
+const holder = []
+
 const roleQuery = [
     {
         name: 'title',
@@ -133,6 +135,8 @@ function answerFunction (answer) {
         addRole();
     } else if (answer.primaryOption === 'Add an Employee') {
         addEmployee();
+    } else if (answer.primaryOption === 'Update Employee Role') {
+        updateEmployee();
     }
 };
 
@@ -267,13 +271,48 @@ async function addEmployee () {
                     if (err) {console.log(err);}
                     console.table(`
                     
-                    Employee Added
+                    EMPLOYEE ADDED
                     
                     `)
                 })
             db.execute('UPDATE employee SET full_name = CONCAT(?, " ", ?) WHERE first_name = ? AND last_name = ?', [newEmployee.first_name, newEmployee.last_name, newEmployee.first_name, newEmployee.last_name],
             function (err, results) {
                 if (err) {console.log(err);}
+            })
+        })
+        .then(primaryPrompt)
+
+}
+
+async function updateEmployee() {
+    let allRoles = await getRoles();
+    let allEmployees = await getManagers();
+    let finalEmployees = ({
+        name: 'employee',
+        type: 'list',
+        message: 'Choose employee to update',
+        choices: allEmployees
+    })
+    let finalRoles = ( {
+        name: 'updatedRole',
+        type: 'list',
+        message: 'Update employee role',
+        choices: allRoles
+    })
+    inquirer.prompt([...holder, finalEmployees, finalRoles])
+        .then(updatedEmployee => {
+            let newRole = updatedEmployee.updatedRole;
+            let newRoleID = newRole.replace(/(^\d+)(.+$)/i,'$1');
+            let employee = updatedEmployee.employee;
+            let employeeID = employee.replace(/(^\d+)(.+$)/i,'$1');
+            db.execute('UPDATE employee SET role_id = ? WHERE id = ?', [newRoleID, employeeID], 
+            function (err, results) {
+                if(err) {console.log(err)}
+                console.table(`
+                
+                EMPLOYEE UPDATED
+
+                `)
             })
         })
         .then(primaryPrompt)
